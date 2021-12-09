@@ -3,10 +3,11 @@ import numpy as np
 from sklearn import neighbors,model_selection,metrics
 import matplotlib.pyplot as plt
 import random
+from feature_selection import feature_selection
 score_metric = metrics.make_scorer(metrics.accuracy_score)
 
 
-
+#unused function (data randomized in matlab)
 def data_randomize(class1,class2): 
     r1,__ = class1.shape
     r2,__ = class2.shape
@@ -64,54 +65,76 @@ def data_randomize(class1,class2):
 
 
 #importing the data
-file = open("tr.csv"); train_set = np.loadtxt(file, delimiter=",")
-file2 = open("te.csv"); test_set = np.loadtxt(file2, delimiter=",")
+file = open("tr.csv"); trains_set = np.loadtxt(file, delimiter=",")
+file2 = open("te.csv"); tests_set = np.loadtxt(file2, delimiter=",")
 
-#collecting data randomly seperated by matlab
-train_labels = [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-test_labels = [0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+accuracy_scores = []
+gene_nums = range(200,300)
+for gene_num in gene_nums:
+    #print(gene_num)
+    train_labels = [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    test_labels = [0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    train_set,test_set = feature_selection(trains_set,tests_set,train_labels,gene_num)
+    train_set = train_set.transpose()
+    test_set = test_set.transpose()
+
+    #defining the weighted voting scheme for cross validation
+    def weighting(scores,k_val):
+        #the more accurate k values get a larger weight in the vote then the less accurate ones
+        kval = np.average(scores) #find the average accuracy score for this value of k
+        return kval,k_val
 
 
-#train_set,train_labels,test_set,test_labels = data_randomize(dataclass1,dataclass2)
+    ks = range(2,10)
+    k_score = []
+    for k in ks:
+        # train the model with the whole training set and the current k
+        knn = neighbors.KNeighborsClassifier(n_neighbors=k)
+        knn.fit(train_set, train_labels)
+        
+        #setting up cross validation
+        loo = model_selection.LeaveOneOut()
+        cv = model_selection.cross_val_score(knn, train_set, train_labels, scoring=score_metric, cv=model_selection.KFold(n_splits=30))
+        
+        #finding the best accuracy found in cross validation
+        scoring = cv
+        score,k = weighting(scoring,k)
+        k_score.append(score)
 
-#defining the weighted voting scheme for cross validation
-def weighting(scores,k_val):
-    #the more accurate k values get a larger weight in the vote then the less accurate ones
-    kval = np.average(scores) #find the average accuracy score for this value of k
-    return kval,k_val
+    # Fitting Cross Validation Results and Evaluating
+    ind = np.argmax(k_score) #the maximum average accuracy score is the k winner - determined by the indices of the table.
+    best_k = ks[ind]
+    print(f"Best K Determined to be: {best_k}")
 
-ks = range(2,10)
-k_score = []
-for k in ks:
-    # train the model with the whole training set and the current k
-    knn = neighbors.KNeighborsClassifier(n_neighbors=k)
+    # re-fit the model with best-k
+    knn = neighbors.KNeighborsClassifier(n_neighbors=best_k)
     knn.fit(train_set, train_labels)
-    
-    #setting up cross validation
-    loo = model_selection.LeaveOneOut()
-    cv = model_selection.cross_val_score(knn, train_set, train_labels, scoring=score_metric, cv=model_selection.KFold(n_splits=25))
-    
-    #finding the best accuracy found in cross validation
-    scoring = cv
-    score,k = weighting(scoring,k)
-    k_score.append(score)
+    train_results = knn.predict(train_set)
+    accuracy_train = metrics.accuracy_score(train_labels, train_results)
+    accuracy_scores.append(accuracy_train)
 
-# Fitting Cross Validation Results and Evaluating
-ind = np.argmax(k_score) #the maximum average accuracy score is the k winner - determined by the indices of the table.
-best_k = ks[ind]
-print(f"Best K Determined to be: {best_k}")
 
-# re-fit the model with best-k
-knn = neighbors.KNeighborsClassifier(n_neighbors=best_k)
-knn.fit(train_set, train_labels)
+best_gene_num_idx = np.argmax(accuracy_scores)
+best_gene_num = gene_nums[best_gene_num_idx]
+print("Best Feature Number Found: %d" %best_gene_num)
+
+#feature selection occuring with best gene number determined
+train_set,test_set = feature_selection(trains_set,tests_set,train_labels,best_gene_num)
+train_set = train_set.transpose()
+test_set = test_set.transpose()
+knn2 = neighbors.KNeighborsClassifier(n_neighbors=best_k)
+knn2.fit(train_set, train_labels)
+
+results = knn2.predict(test_set)
+accuracy_test = metrics.accuracy_score(test_labels, results)
+
+
+
 results = knn.predict(test_set)
 accuracy_test = metrics.accuracy_score(test_labels, results)
-c1 = np.zeros((30,3), dtype='int')
-c2 = np.zeros((30,1), dtype='int')
-c3 = np.zeros((30,1), dtype='int')
+
 import csv  
-
-
+c1 = np.zeros((30,3), dtype='int')
 for i in range(1,31):
     print(f"Data Point Index: {i}     |       Predicted Class: {results[i-1]}       |       True Class: {test_labels[i-1]}")
 
@@ -122,7 +145,5 @@ with open('finalresults.csv', 'w', encoding='UTF8', newline='') as f:
     writer = csv.writer(f)
     writer.writerow(header)
     writer.writerows(c1)
-
-
 
 print("Total Accuracy on Test Set: %2.1f %%" %(accuracy_test*100))
