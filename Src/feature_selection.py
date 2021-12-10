@@ -4,17 +4,6 @@ from sklearn import neighbors,model_selection,metrics
 import matplotlib.pyplot as plt
 import random
 
-#importing the data
-file = open("tr.csv"); train_set = np.loadtxt(file, delimiter=",")
-file2 = open("te.csv"); test_set = np.loadtxt(file2, delimiter=",")
-
-#collecting data randomly seperated by matlab
-train_labels = [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-test_labels = [0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-
-train_set = train_set.transpose()
-test_set = test_set.transpose()
-
 
 
 def feature_selection(train_set,test_set,train_labels,gene_num):
