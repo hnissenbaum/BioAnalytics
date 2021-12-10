@@ -65,8 +65,8 @@ def data_randomize(class1,class2):
 
 
 #importing the data
-file = open("tr.csv"); trains_set = np.loadtxt(file, delimiter=",")
-file2 = open("te.csv"); tests_set = np.loadtxt(file2, delimiter=",")
+file = open("TrainSet - All Features.csv"); trains_set = np.loadtxt(file, delimiter=",")
+file2 = open("TestSet - All Features.csv"); tests_set = np.loadtxt(file2, delimiter=",")
 
 train_labels = [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 test_labels = [0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
@@ -143,5 +143,13 @@ with open('finalresults.csv', 'w', encoding='UTF8', newline='') as f:
     writer = csv.writer(f)
     writer.writerow(header)
     writer.writerows(c1)
+
+with open('trainset.csv', 'w', encoding='UTF8', newline='') as f:
+    writer = csv.writer(f)
+    writer.writerows(train_set)
+
+with open('testset.csv', 'w', encoding='UTF8', newline='') as f:
+    writer = csv.writer(f)
+    writer.writerows(test_set)
 
 print("Total Accuracy on Test Set: %2.1f %%" %(accuracy_test*100))
